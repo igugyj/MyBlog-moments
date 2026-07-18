@@ -8,7 +8,7 @@ draft: false
 
 <div style="width: 100%; aspect-ratio: 16 / 9; overflow: hidden;">
   <iframe
-    src="//player.bilibili.com/player.html?bvid=BV1YgT26qETR"
+    src="//player.bilibili.com/player.html?bvid=BV1YgT26qETR&autoplay=0"
     scrolling="no"
     border="0"
     frameborder="no"
