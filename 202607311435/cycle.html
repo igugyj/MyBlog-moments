@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Floyd 判圈算法 · 环检测与环起点定位</title>
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', Roboto, 'Helvetica Neue', sans-serif;
+            background: #DAE8F5;
+            min-height: 100vh;
+            padding: 24px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 1060px;
+            width: 100%;
+            background: #FFFFFF;
+            border-radius: 24px;
+            box-shadow: 0 12px 40px rgba(38, 58, 79, 0.14);
+            padding: 28px 32px 36px;
+            border: 1px solid #C9D9E6;
+        }
+        /* ===== 头部 ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .title-group h1 {
+            font-size: 23px;
+            font-weight: 700;
+            color: #263A4F;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .badge {
+            font-size: 13px;
+            font-weight: 600;
+            background: #A7DDFF;
+            color: #1D3A52;
+            padding: 3px 14px;
+            border-radius: 40px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .sub {
+            font-size: 14px;
+            color: #6B85A0;
+            margin-top: 3px;
+        }
+        .params {
+            background: #EEF5FB;
+            border-radius: 40px;
+            padding: 7px 18px 7px 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 14px;
+            color: #2C4358;
+            flex-wrap: wrap;
+        }
+        .params span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .params .num {
+            font-weight: 700;
+            color: #3D7EA6;
+        }
+        /* ===== 画布 ===== */
+        .canvas-wrap {
+            background: #F4F9FD;
+            border-radius: 16px;
+            border: 1px solid #C9D9E6;
+            padding: 4px;
+            margin-bottom: 12px;
+        }
+        .canvas-wrap svg {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 13px;
+            background: #F4F9FD;
+        }
+        /* ===== 图例 ===== */
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px 26px;
+            padding: 10px 0 12px;
+            font-size: 13px;
+            color: #2C4358;
+            border-bottom: 1px solid #D8E5F0;
+            margin-bottom: 14px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 1.5px solid rgba(0, 0, 0, 0.12);
+            flex-shrink: 0;
+        }
+        .dot-slow { background: #E67E22; }
+        .dot-fast { background: #C0392B; }
+        .dot-visited { background: #DAE8F5; border-color: #A7DDFF; }
+        .dot-entry { background: #2E8B57; border-color: #1F6B40; }
+        .dot-meet { background: #D35400; border-color: #9C3D00; }
+        .dot-ring { background: #F4F9FD; border-color: #C0392B; }
+        .swatch-line {
+            width: 22px;
+            border-top: 2.5px dashed #C0392B;
+        }
+        /* ===== 控制区 ===== */
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px 16px;
+            margin: 10px 0 12px;
+        }
+        .btn-group {
+            display: flex;
+            gap: 6px;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 40px;
+            border: 1px solid #C9D9E6;
+            background: #FFFFFF;
+            color: #2C4358;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+            font-family: inherit;
+            min-width: 44px;
+            height: 40px;
+        }
+        .btn:hover { background: #EEF5FB; border-color: #A7DDFF; }
+        .btn:active { transform: scale(0.96); }
+        .btn-primary {
+            background: #A7DDFF;
+            border-color: #A7DDFF;
+            color: #1D3A52;
+        }
+        .btn-primary:hover { background: #8FC9F2; border-color: #8FC9F2; }
+        .btn-primary:disabled {
+            background: #C9D9E6;
+            border-color: #C9D9E6;
+            cursor: not-allowed;
+            opacity: 0.65;
+        }
+        .btn-outline { background: transparent; }
+        .btn svg { display: block; flex-shrink: 0; }
+        .btn-icon-only { padding: 8px 10px; min-width: 40px; }
+        .progress-wrap {
+            flex: 1;
+            min-width: 140px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .progress-bar {
+            flex: 1;
+            height: 6px;
+            background: #D8E5F0;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .progress-bar .fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #A7DDFF, #6FB3E0);
+            border-radius: 6px;
+            transition: width 0.25s ease;
+        }
+        .progress-text {
+            font-size: 13px;
+            font-weight: 600;
+            color: #6B85A0;
+            min-width: 56px;
+            text-align: right;
+        }
+        /* ===== 步骤面板 ===== */
+        .step-panel {
+            background: #EEF5FB;
+            border-radius: 14px;
+            border-left: 5px solid #A7DDFF;
+            padding: 14px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            gap: 10px 18px;
+            margin-bottom: 20px;
+        }
+        .step-phase {
+            font-size: 12px;
+            font-weight: 700;
+            color: #FFFFFF;
+            padding: 3px 14px;
+            border-radius: 40px;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 2px;
+        }
+        .step-phase.detect { background: #3D7EA6; }
+        .step-phase.find { background: #2E8B57; }
+        .step-main { flex: 1; min-width: 220px; }
+        .step-desc {
+            font-size: 15px;
+            color: #263A4F;
+            line-height: 1.65;
+        }
+        .step-desc strong {
+            font-weight: 700;
+            color: #D35400;
+        }
+        .step-desc .hl-slow { color: #E67E22; font-weight: 700; }
+        .step-desc .hl-fast { color: #C0392B; font-weight: 700; }
+        .step-desc .hl-entry { color: #2E8B57; font-weight: 700; }
+        .step-analysis {
+            margin-top: 6px;
+            font-size: 13.5px;
+            line-height: 1.7;
+            color: #55697E;
+            background: #F8FBFE;
+            border: 1px dashed #C9D9E6;
+            border-radius: 10px;
+            padding: 8px 12px;
+        }
+        .step-analysis .an-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            color: #3D7EA6;
+            font-weight: 700;
+            margin-right: 6px;
+        }
+        .step-pointer {
+            font-size: 13px;
+            color: #6B85A0;
+            display: flex;
+            gap: 16px;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+            padding-top: 2px;
+        }
+        .step-pointer span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: #FFFFFF;
+            border: 1px solid #D8E5F0;
+            border-radius: 8px;
+            padding: 3px 10px;
+        }
+        .step-pointer .p-slow { color: #E67E22; font-weight: 700; }
+        .step-pointer .p-fast { color: #C0392B; font-weight: 700; }
+        .step-pointer .p-node { color: #263A4F; font-weight: 700; }
+        .mini-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .mini-slow { background: #E67E22; }
+        .mini-fast { background: #C0392B; }
+        /* ===== 响应式 ===== */
+        @media (max-width: 700px) {
+            .container { padding: 18px 14px 24px; }
+            .header { flex-direction: column; align-items: stretch; }
+            .params { justify-content: flex-start; padding: 6px 14px; gap: 8px 14px; font-size: 13px; }
+            .controls { flex-direction: column; align-items: stretch; }
+            .btn-group { justify-content: center; }
+            .progress-wrap { min-width: unset; }
+            .step-panel { padding: 12px 14px; }
+            .title-group h1 { font-size: 19px; }
+        }
+        @media (max-width: 480px) {
+            .btn { font-size: 12px; padding: 6px 12px; height: 36px; min-width: 36px; }
+            .btn-icon-only { padding: 6px 8px; min-width: 36px; }
+            .legend { gap: 8px 14px; font-size: 12px; }
+        }
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- ===== 头部 ===== -->
+        <div class="header">
+            <div class="title-group">
+                <h1>
+                    <span>Floyd 判圈算法</span>
+                    <span class="badge">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.1 13.6A1.5 1.5 0 0 0 5.4 16H10l-1 6 8.9-11.6A1.5 1.5 0 0 0 16.6 8H12l1-6Z"/></svg>
+                        快慢指针
+                    </span>
+                </h1>
+                <div class="sub">单链表环检测 · 环起点定位 · 逐步演示与解析</div>
+            </div>
+            <div class="params">
+                <span>环长 <span class="num">6</span></span>
+                <span>环起点 <span class="num">3</span>（0 起始）</span>
+                <span>节点 <span class="num">9</span></span>
+                <span>前导链 <span class="num">3</span></span>
+            </div>
+        </div>
+
+        <!-- ===== SVG 画布 ===== -->
+        <div class="canvas-wrap">
+            <svg viewBox="0 0 940 520" xmlns="http://www.w3.org/2000/svg" id="mainSvg">
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="8" refX="10" refY="4" orient="auto">
+                        <path d="M0,0 L10,4 L0,8 L3,4 Z" fill="#9DB8CF" />
+                    </marker>
+                    <marker id="arrowhead-ring" markerWidth="10" markerHeight="8" refX="10" refY="4" orient="auto">
+                        <path d="M0,0 L10,4 L0,8 L3,4 Z" fill="#C0392B" />
+                    </marker>
+                    <filter id="shadow-light" x="-10%" y="-10%" width="130%" height="130%">
+                        <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="rgba(38,58,79,0.12)"/>
+                    </filter>
+                    <filter id="shadow-mark" x="-20%" y="-20%" width="160%" height="160%">
+                        <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="rgba(0,0,0,0.18)"/>
+                    </filter>
+                </defs>
+            </svg>
+        </div>
+
+        <!-- ===== 图例 ===== -->
+        <div class="legend">
+            <span class="legend-item"><span class="dot dot-slow"></span> Slow 指针（1 步/轮）</span>
+            <span class="legend-item"><span class="dot dot-fast"></span> Fast 指针（2 步/轮）</span>
+            <span class="legend-item"><span class="dot dot-visited"></span> 已访问</span>
+            <span class="legend-item"><span class="dot dot-entry"></span> 环入口</span>
+            <span class="legend-item"><span class="dot dot-meet"></span> 相遇点</span>
+            <span class="legend-item"><span class="swatch-line"></span> 环内边</span>
+        </div>
+
+        <!-- ===== 控制区 ===== -->
+        <div class="controls">
+            <div class="btn-group">
+                <button class="btn btn-primary btn-icon-only" id="playBtn" aria-label="播放 / 暂停">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5,3 19,12 5,21" /></svg>
+                </button>
+                <button class="btn btn-outline btn-icon-only" id="resetBtn" aria-label="重置">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9m0 0v6m0-6h-6" /></svg>
+                </button>
+                <button class="btn btn-outline btn-icon-only" id="stepBtn" aria-label="下一步">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,6 15,12 9,18" /></svg>
+                </button>
+            </div>
+            <div class="progress-wrap">
+                <div class="progress-bar"><div class="fill" id="progressFill" style="width:0%;"></div></div>
+                <span class="progress-text" id="progressText">1 / 10</span>
+            </div>
+        </div>
+
+        <!-- ===== 步骤说明面板 ===== -->
+        <div class="step-panel" id="stepPanel">
+            <span class="step-phase detect" id="phaseBadge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                <span id="phaseText">检测环</span>
+            </span>
+            <div class="step-main">
+                <div class="step-desc" id="stepDesc">点击「播放」或「下一步」开始演示</div>
+                <div class="step-analysis" id="stepAnalysis"></div>
+            </div>
+            <div class="step-pointer">
+                <span><span class="mini-dot mini-slow"></span>Slow <span class="p-slow">节点</span><span class="p-node" id="slowPos">0</span></span>
+                <span><span class="mini-dot mini-fast"></span>Fast <span class="p-slow">节点</span><span class="p-node" id="fastPos">0</span></span>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ===== 链表数据 =====
+            // 环长 6，环起点 3（0 起始）：节点 3,4,5,6,7,8 构成环，前导链 0,1,2
+            const NODE_RADIUS = 26;
+            const R_CUT = NODE_RADIUS + 2;
+            const nodes = [
+                { id: 0, x: 70,  y: 280, label: '0' },
+                { id: 1, x: 190, y: 280, label: '1' },
+                { id: 2, x: 310, y: 280, label: '2' },
+                { id: 3, x: 430, y: 280, label: '3' },
+                { id: 4, x: 510, y: 138, label: '4' },
+                { id: 5, x: 670, y: 138, label: '5' },
+                { id: 6, x: 750, y: 280, label: '6' },
+                { id: 7, x: 670, y: 422, label: '7' },
+                { id: 8, x: 510, y: 422, label: '8' },
+            ];
+            const edges = [
+                { from: 0, to: 1, type: 'chain' },
+                { from: 1, to: 2, type: 'chain' },
+                { from: 2, to: 3, type: 'chain' },
+                { from: 3, to: 4, type: 'ring' },
+                { from: 4, to: 5, type: 'ring' },
+                { from: 5, to: 6, type: 'ring' },
+                { from: 6, to: 7, type: 'ring' },
+                { from: 7, to: 8, type: 'ring' },
+                { from: 8, to: 3, type: 'ring' },
+            ];
+            const ENTRY_ID = 3;
+            const MEET_ID = 6;
+
+            // ===== 步骤数据 =====
+            const steps = [
+                {
+                    slow: 0, fast: 0, visited: [0], phase: 'detect',
+                    desc: '初始状态：slow 与 fast 都指向头结点 <span class="hl-slow">0</span>，开始探测环。',
+                    analysis: '链表结构为 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 3（8 的 next 指回 3 形成环）。先做边界检查：若 head 为空或 head.next 为空，可直接判定无环。'
+                },
+                {
+                    slow: 1, fast: 2, visited: [0, 1, 2], phase: 'detect',
+                    desc: '第一轮：slow 走 1 步到节点 <span class="hl-slow">1</span>，fast 走 2 步到节点 <span class="hl-fast">2</span>。',
+                    analysis: '每一轮 slow 前进 1、fast 前进 2，两者间距每轮增加 1。若无环，fast 将先到达链表末尾（null）而终止。'
+                },
+                {
+                    slow: 2, fast: 4, visited: [0, 1, 2, 4], phase: 'detect',
+                    desc: 'slow 到达前导链末端节点 <span class="hl-slow">2</span>，fast 已冲入环内到达节点 <span class="hl-fast">4</span>。',
+                    analysis: 'slow 尚未入环，fast 已进入环内。环内没有 null，fast 将无限绕圈——这正是"有环"的判据来源。'
+                },
+                {
+                    slow: 3, fast: 6, visited: [0, 1, 2, 3, 4, 6], phase: 'detect',
+                    desc: 'slow 到达环入口节点 <span class="hl-entry">3</span>（前导链长 a = 3），fast 到达节点 <span class="hl-fast">6</span>。',
+                    analysis: '从头部到环入口恰好 3 步，等于入口下标。此时 slow 共走 3 步，fast 共走 6 步 = 2 × 3。'
+                },
+                {
+                    slow: 4, fast: 8, visited: [0, 1, 2, 3, 4, 6, 8], phase: 'detect',
+                    desc: '两者都在环内：slow 到节点 <span class="hl-slow">4</span>，fast 到节点 <span class="hl-fast">8</span>。',
+                    analysis: '入环后 slow 每轮移动 1、fast 移动 2，fast 以每轮 1 步的相对速度追赶 slow，两者环内距离正在缩短。'
+                },
+                {
+                    slow: 5, fast: 4, visited: [0, 1, 2, 3, 4, 5, 6, 8], phase: 'detect',
+                    desc: 'slow 到节点 <span class="hl-slow">5</span>；fast 从 8 经入口 3 绕回节点 <span class="hl-fast">4</span>。',
+                    analysis: 'fast 已领先 slow 5 步，环长 6，等价于落后 1 步（5 ≡ −1 mod 6）。下一轮二者将在节点 6 重合。fast 路径：8 → 3 → 4。'
+                },
+                {
+                    slow: 6, fast: 6, visited: [0, 1, 2, 3, 4, 5, 6, 8], phase: 'detect',
+                    desc: '<strong>第一次相遇！</strong>slow 从 5 到节点 <span class="hl-slow">6</span>，fast 从 4 经 5 到达节点 <span class="hl-fast">6</span>。',
+                    analysis: 'slow 共走 s = 6 步，fast 共走 2s = 12 步，步数差 6 恰好等于环长——差速追击必然相遇。slow 入环后走了 m = s − a = 3 步。环的存在性得证。'
+                },
+                {
+                    slow: 1, fast: 7, visited: [0, 1, 2, 3, 4, 5, 6, 7, 8], phase: 'find',
+                    desc: '检测完成，进入定位阶段：把 slow 重置回头部 <span class="hl-slow">0</span>，两者改为同速前进。本轮 slow 到 <span class="hl-slow">1</span>，fast 从相遇点 6 走 1 步到 <span class="hl-fast">7</span>。',
+                    analysis: '核心结论：此后两指针同步各走 a = 3 步，第二次相遇点必为环入口。因为 m + a = 3 + 3 = 6 = 环长，fast 从相遇点再走 a 步恰好绕回入口。'
+                },
+                {
+                    slow: 2, fast: 8, visited: [0, 1, 2, 3, 4, 5, 6, 7, 8], phase: 'find',
+                    desc: 'slow 到节点 <span class="hl-slow">2</span>，fast 到节点 <span class="hl-fast">8</span>。',
+                    analysis: '双方速度相同、步数相同，始终保持同步：slow 距入口 3 还有 1 步，fast 距入口 3 还有 1 步（8 → 3 为闭合边）。'
+                },
+                {
+                    slow: 3, fast: 3, visited: [0, 1, 2, 3, 4, 5, 6, 7, 8], phase: 'find',
+                    desc: '<strong>第二次相遇！</strong>slow 从 2 到节点 <span class="hl-entry">3</span>，fast 从 8 经闭合边到节点 <span class="hl-entry">3</span>。环起点定位成功。',
+                    analysis: 'slow 从头走 a = 3 步到达入口；fast 从相遇点 6 绕行 3 步（6 → 7 → 8 → 3）同样到达入口。环起点 = 节点 3，环长 = 6，算法结束，全程空间 O(1)。'
+                },
+            ];
+
+            // ===== DOM 引用 =====
+            const svg = document.getElementById('mainSvg');
+            const playBtn = document.getElementById('playBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const stepBtn = document.getElementById('stepBtn');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            const phaseBadge = document.getElementById('phaseBadge');
+            const phaseText = document.getElementById('phaseText');
+            const stepDesc = document.getElementById('stepDesc');
+            const stepAnalysis = document.getElementById('stepAnalysis');
+            const slowPos = document.getElementById('slowPos');
+            const fastPos = document.getElementById('fastPos');
+
+            const TOTAL_STEPS = steps.length;
+            let currentStep = 0;
+            let isPlaying = false;
+            let timer = null;
+
+            const NS = 'http://www.w3.org/2000/svg';
+
+            function el(tag, attrs) {
+                const node = document.createElementNS(NS, tag);
+                for (const k in attrs) node.setAttribute(k, attrs[k]);
+                return node;
+            }
+
+            // 边截断到节点圆边界，保证箭头完整露出圆外
+            function cutLine(x1, y1, x2, y2) {
+                const dx = x2 - x1, dy = y2 - y1;
+                const len = Math.hypot(dx, dy) || 1;
+                return {
+                    x1: x1 + (dx / len) * R_CUT, y1: y1 + (dy / len) * R_CUT,
+                    x2: x2 - (dx / len) * R_CUT, y2: y2 - (dy / len) * R_CUT
+                };
+            }
+
+            // ===== 渲染 =====
+            function render(stepIndex) {
+                const data = steps[stepIndex];
+                const slow = data.slow, fast = data.fast, visited = data.visited, phase = data.phase;
+                const ringCx = 580, ringCy = 280, ringR = 190;
+
+                const defs = svg.querySelector('defs');
+                svg.innerHTML = '';
+                svg.appendChild(defs);
+
+                // 1. 边
+                edges.forEach(edge => {
+                    const fromNode = nodes[edge.from];
+                    const toNode = nodes[edge.to];
+                    const isRing = edge.type === 'ring';
+                    const t = cutLine(fromNode.x, fromNode.y, toNode.x, toNode.y);
+                    const line = el('line', {
+                        'x1': t.x1, 'y1': t.y1, 'x2': t.x2, 'y2': t.y2,
+                        'stroke': isRing ? '#C0392B' : '#9DB8CF',
+                        'stroke-width': isRing ? '2.5' : '2',
+                        'marker-end': 'url(' + (isRing ? '#arrowhead-ring' : '#arrowhead') + ')'
+                    });
+                    if (isRing) line.setAttribute('stroke-dasharray', '6 4');
+                    svg.appendChild(line);
+                });
+
+                // 2. 节点
+                nodes.forEach(node => {
+                    const isVisited = visited.includes(node.id);
+                    const isEntry = node.id === ENTRY_ID;
+                    const isSlow = node.id === slow;
+                    const isFast = node.id === fast;
+                    const isMeet = isSlow && isFast && stepIndex >= 6;
+
+                    let fill = '#EDF4FA', stroke = '#C2D4E2', strokeWidth = 2;
+                    if (isEntry && stepIndex >= TOTAL_STEPS - 1) {
+                        fill = '#2E8B57'; stroke = '#1F6B40'; strokeWidth = 3;
+                    } else if (isMeet) {
+                        fill = '#D35400'; stroke = '#9C3D00'; strokeWidth = 3;
+                    } else if (isVisited) {
+                        fill = '#DAE8F5'; stroke = '#A7DDFF';
+                    }
+                    if (isSlow && isFast) { stroke = '#D35400'; strokeWidth = 4; }
+                    else if (isSlow) { stroke = '#E67E22'; strokeWidth = 3.5; }
+                    else if (isFast) { stroke = '#C0392B'; strokeWidth = 3.5; }
+
+                    const circle = el('circle', {
+                        'cx': node.x, 'cy': node.y, 'r': NODE_RADIUS,
+                        'fill': fill, 'stroke': stroke, 'stroke-width': strokeWidth,
+                        'filter': 'url(#shadow-light)'
+                    });
+                    svg.appendChild(circle);
+
+                    const text = el('text', {
+                        'x': node.x, 'y': node.y + 6, 'text-anchor': 'middle',
+                        'font-size': '15', 'font-weight': '700', 'fill': '#263A4F'
+                    });
+                    text.textContent = node.label;
+                    svg.appendChild(text);
+
+                    if (isEntry && stepIndex >= TOTAL_STEPS - 1) {
+                        const label = el('text', {
+                            'x': node.x, 'y': node.y - NODE_RADIUS - 26,
+                            'text-anchor': 'middle', 'font-size': '12.5',
+                            'fill': '#2E8B57', 'font-weight': '700'
+                        });
+                        label.textContent = '环入口';
+                        svg.appendChild(label);
+                    }
+                    if (node.id === MEET_ID && stepIndex >= 6) {
+                        const label = el('text', {
+                            'x': node.x + 8, 'y': node.y + NODE_RADIUS + 22,
+                            'font-size': '12.5', 'fill': '#D35400', 'font-weight': '700'
+                        });
+                        label.textContent = '相遇点';
+                        svg.appendChild(label);
+                    }
+                });
+
+                // 3. 指针标记
+                if (slow !== undefined) {
+                    const n = nodes[slow];
+                    const g = el('g', { 'filter': 'url(#shadow-mark)' });
+                    g.appendChild(el('circle', { 'cx': n.x - 32, 'cy': n.y - 32, 'r': 14, 'fill': '#E67E22', 'stroke': '#CA6F1E', 'stroke-width': '1.5' }));
+                    const t = el('text', { 'x': n.x - 32, 'y': n.y - 27, 'text-anchor': 'middle', 'font-size': '13', 'font-weight': '700', 'fill': '#FFFFFF' });
+                    t.textContent = 'S';
+                    g.appendChild(t);
+                    svg.appendChild(g);
+                }
+                if (fast !== undefined) {
+                    const n = nodes[fast];
+                    const g = el('g', { 'filter': 'url(#shadow-mark)' });
+                    g.appendChild(el('circle', { 'cx': n.x + 32, 'cy': n.y - 32, 'r': 14, 'fill': '#C0392B', 'stroke': '#A93226', 'stroke-width': '1.5' }));
+                    const t = el('text', { 'x': n.x + 32, 'y': n.y - 27, 'text-anchor': 'middle', 'font-size': '13', 'font-weight': '700', 'fill': '#FFFFFF' });
+                    t.textContent = 'F';
+                    g.appendChild(t);
+                    svg.appendChild(g);
+                }
+
+                // 4. 相遇标记环
+                if (slow === fast && stepIndex >= 6) {
+                    const n = nodes[slow];
+                    svg.appendChild(el('circle', {
+                        'cx': n.x, 'cy': n.y, 'r': NODE_RADIUS + 7,
+                        'fill': 'none', 'stroke': '#D35400', 'stroke-width': '3',
+                        'stroke-dasharray': '6 5', 'opacity': '0.75'
+                    }));
+                }
+
+                // 5. 环区域
+                if (stepIndex >= 3) {
+                    svg.appendChild(el('circle', {
+                        'cx': ringCx, 'cy': ringCy, 'r': ringR,
+                        'fill': 'rgba(167,221,255,0.16)', 'pointer-events': 'none'
+                    }));
+                    if (stepIndex >= TOTAL_STEPS - 1) {
+                        const label = el('text', {
+                            'x': ringCx + 216, 'y': ringCy - 4,
+                            'font-size': '14', 'fill': '#3D7EA6', 'font-weight': '700'
+                        });
+                        label.textContent = '环（长度 6）';
+                        svg.appendChild(label);
+                    }
+                }
+
+                // 6. UI 更新
+                progressFill.style.width = ((stepIndex + 1) / TOTAL_STEPS * 100) + '%';
+                progressText.textContent = (stepIndex + 1) + ' / ' + TOTAL_STEPS;
+
+                if (phase === 'detect') {
+                    phaseBadge.classList.add('detect');
+                    phaseBadge.classList.remove('find');
+                    phaseText.textContent = '检测环';
+                } else {
+                    phaseBadge.classList.add('find');
+                    phaseBadge.classList.remove('detect');
+                    phaseText.textContent = '定位入口';
+                }
+
+                stepDesc.innerHTML = data.desc;
+                stepAnalysis.innerHTML =
+                    '<span class="an-label">' +
+                    '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M12 11v5"/></svg>' +
+                    '解析</span>' + data.analysis;
+
+                slowPos.textContent = slow;
+                fastPos.textContent = fast;
+
+                if (stepIndex >= TOTAL_STEPS - 1) {
+                    if (isPlaying) stopPlay();
+                    playBtn.disabled = true;
+                } else {
+                    playBtn.disabled = false;
+                }
+            }
+
+            // ===== 控制 =====
+            function goToStep(index) {
+                if (index < 0) index = 0;
+                if (index >= TOTAL_STEPS) index = TOTAL_STEPS - 1;
+                currentStep = index;
+                render(currentStep);
+            }
+
+            function nextStep() {
+                if (currentStep < TOTAL_STEPS - 1) {
+                    goToStep(currentStep + 1);
+                    return true;
+                }
+                return false;
+            }
+
+            function resetAll() {
+                stopPlay();
+                goToStep(0);
+                playBtn.disabled = false;
+            }
+
+            const ICON_PLAY = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5,3 19,12 5,21" /></svg>';
+            const ICON_PAUSE = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+
+            function startPlay() {
+                if (isPlaying) return;
+                if (currentStep >= TOTAL_STEPS - 1) resetAll();
+                isPlaying = true;
+                playBtn.innerHTML = ICON_PAUSE;
+                timer = setInterval(function() {
+                    if (!nextStep()) stopPlay();
+                }, 1500);
+            }
+
+            function stopPlay() {
+                isPlaying = false;
+                if (timer) { clearInterval(timer); timer = null; }
+                playBtn.innerHTML = ICON_PLAY;
+                if (currentStep >= TOTAL_STEPS - 1) playBtn.disabled = true;
+            }
+
+            function togglePlay() {
+                isPlaying ? stopPlay() : startPlay();
+            }
+
+            // ===== 事件 =====
+            playBtn.addEventListener('click', togglePlay);
+            resetBtn.addEventListener('click', resetAll);
+            stepBtn.addEventListener('click', function() { if (!isPlaying) nextStep(); });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                if (e.key === ' ' || e.key === 'Space') { e.preventDefault(); togglePlay(); }
+                else if (e.key === 'ArrowRight' || e.key === 'Right') { e.preventDefault(); if (!isPlaying) nextStep(); }
+                else if (e.key === 'r' || e.key === 'R') resetAll();
+            });
+
+            let resizeTimer;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(function() { render(currentStep); }, 200);
+            });
+
+            // ===== 初始化 =====
+            goToStep(0);
+        })();
+    </script>
+</body>
+</html>
