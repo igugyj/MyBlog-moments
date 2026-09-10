@@ -7,7 +7,7 @@ photos:
 draft: false
 ---
 
-<script src="/moments/20260217/assets/fireworks.js" defer></script>
+<script src="assets/fireworks.js" defer></script>
 
 # 关于新年的思考和过去一年的片面总结
 

@@ -8,7 +8,9 @@ draft: false
 
 它利用了快慢指针的思想，以及环无终点，快慢指针互相追逐，相遇即环存在，再移动一个指针到头部，两指针再每次移动1结点，第二次相遇即得环起点。
 
-<video width="100%" controls src="/moments/202607311435/assets/2026-07-31_14-34-16.mp4" title="Title"></video>
+<div style="width: 100%; aspect-ratio: 16 / 9; overflow: hidden;">
+<video width="100%" controls src="assets/2026-07-31_14-34-16.mp4" title="Title"></video>
+</div>
 
 在线玩：[cycle.html](/moments/202607311435/cycle.html)
 
