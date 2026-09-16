@@ -1,0 +1,212 @@
+/* =========================================
+   i.css
+   作用域说明：所有样式只作用于 .chat-container 内，不会污染整站。
+   ========================================= */
+
+@font-face {
+  font-family: "Clash";
+  src: url("Clash_Regular.otf.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Clash";
+  src: url("Clash_Bold.otf.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* =========================================
+    2. 局部重置（只作用于 .chat-container 内部）
+    ========================================= */
+.chat-container,
+.chat-container *,
+.chat-container *::before,
+.chat-container *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* =========================================
+    1. 变量 + 容器本身
+       原来写在 :root 和 body 上的样式，全部收进 .chat-container
+    ========================================= */
+.chat-container {
+  /* --- 变量 --- */
+  --bg-main: #413b39;
+  --bg-other: #362f31;
+  --bg-mine: #5d5351;
+  --text-system: #909ca3;
+  --text-nickname: #ffffff;
+  --color-green: #61bf88;
+  --color-red: #f0656b;
+
+  --font-family:
+    "Clash", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+
+  /* --- 视觉（原来 body 上的背景 / 字体） --- */
+  background-color: var(--bg-main);
+  font-family: var(--font-family);
+  color: var(--text-nickname);
+  min-height: 100vh;
+  width: 100%;
+  border-radius: 20px;
+  /* --- 布局 --- */
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+
+  /* 内边距左右用 max() 让内容始终居中在一个 600px 宽的区域内：
+     - 宽屏：两侧留白 = (100% - 600px) / 2
+     - 窄屏：最少 20px 内边距，内容自适应 */
+  padding: 40px max(20px, calc((100% - 600px) / 2));
+}
+
+/* =========================================
+    3. 消息整体布局
+    ========================================= */
+.message-wrapper {
+  display: flex;
+  flex-direction: column;
+  max-width: 85%;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.message-wrapper.left {
+  align-self: flex-start;
+}
+
+.message-wrapper.right {
+  align-self: flex-end;
+}
+
+/* =========================================
+    4. 昵称与头衔
+    ========================================= */
+.sender-info {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 6px;
+  gap: 2px;
+}
+
+.nickname {
+  color: var(--text-nickname);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.role {
+  color: var(--text-system);
+  font-size: 12px;
+}
+
+.message-wrapper.right .sender-info {
+  align-items: flex-end;
+}
+
+/* =========================================
+    5. 气泡与内容
+    ========================================= */
+.bubble {
+  background-color: var(--bg-other);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  word-break: break-word;
+}
+
+.message-wrapper.right .bubble {
+  background-color: var(--bg-mine);
+  border-top-right-radius: 4px;
+}
+
+.message-wrapper.left .bubble {
+  border-top-left-radius: 4px;
+}
+
+.text {
+  color: var(--text-nickname);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* =========================================
+    6. 时间戳与系统文本
+    ========================================= */
+.time {
+  color: var(--text-system);
+  font-size: 11px;
+  align-self: flex-end;
+  margin-top: -4px;
+}
+
+.sys-green {
+  color: var(--color-green);
+}
+
+.sys-red {
+  color: var(--color-red);
+}
+
+.system-message {
+  text-align: center;
+  color: var(--text-system);
+  font-size: 13px;
+  margin: 10px 0;
+}
+
+.sys-nickname {
+  color: var(--text-nickname);
+  font-weight: bold;
+}
+
+/* =========================================
+    7. 引用块
+    ========================================= */
+.quote {
+  background-color: rgba(0, 0, 0, 0.18);
+  border-left: 3px solid var(--text-system);
+  border-radius: 6px;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.quote-nick {
+  color: var(--text-system);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.quote-text {
+  color: var(--text-system);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* =========================================
+    动画
+    ========================================= */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
